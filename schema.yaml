@@ -1,0 +1,43 @@
+# Engram — Entry Schema
+# Every entry is a markdown file with YAML frontmatter following this schema.
+
+entry:
+  required:
+    id: string          # Unique ID: DEC-001, LRN-001, MST-001, OBS-001
+    type: enum          # decision, learning, mistake, observation, goal
+    date: date          # ISO 8601: 2026-03-16
+    tags: list[string]  # Freeform but consistent: [architecture, python, testing]
+    status: enum        # active, superseded, archived, stale
+
+  optional:
+    links: list[string] # Related entry IDs: [DEC-001, LRN-003]
+    supersedes: string  # ID of entry this replaces
+    project: string     # Project context: engram, svx, persona-engine
+    confidence: enum    # high, medium, low — how sure am I about this?
+
+# Entry types and what they mean:
+types:
+  decision:
+    prefix: DEC
+    purpose: "A choice made with reasoning. Tracked to see if it holds up."
+    required_sections: [context, choice, reasoning, alternatives_considered]
+
+  learning:
+    prefix: LRN
+    purpose: "Something discovered through doing, not reading."
+    required_sections: [context, what_happened, insight, applies_to]
+
+  mistake:
+    prefix: MST
+    purpose: "Something that went wrong. What broke, why, how to prevent."
+    required_sections: [context, what_went_wrong, root_cause, prevention]
+
+  observation:
+    prefix: OBS
+    purpose: "A pattern noticed. Not yet a decision or learning — just data."
+    required_sections: [context, observation, significance]
+
+  goal:
+    prefix: GOL
+    purpose: "What the system is trying to achieve. Measurable."
+    required_sections: [objective, success_criteria, current_status]
