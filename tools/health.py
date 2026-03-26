@@ -71,32 +71,40 @@ def score_integrity(entries: list[Entry]) -> HealthDimension:
 
 
 def score_connectivity(entries: list[Entry]) -> HealthDimension:
-    """Score based on graph structure."""
+    """Score based on graph structure.
+
+    Uses coverage-based scoring: what % of entries are in the largest
+    connected component? A 45-entry cluster + 4 orphans is very different
+    from 6 equal-sized islands — the score should reflect that.
+    """
     if not entries:
         return HealthDimension("Connectivity", 0, 0.30, ["No entries"])
 
     n = len(entries)
     details = []
 
-    # Clusters: 1 is perfect, each extra costs 20
+    # Coverage: % of entries in the largest connected component
     clusters = find_clusters(entries)
-    cluster_penalty = max(0, (len(clusters) - 1) * 20)
-    details.append(f"Clusters: {len(clusters)}")
+    largest = max(len(c) for c in clusters)
+    coverage = largest / n
+    base = coverage * 100
+    details.append(f"Clusters: {len(clusters)} (largest: {largest}/{n})")
 
-    # Bridges: each one is a fragility point, costs 10
+    # Bridges: structural fragility within the connected portion
     bridges = find_bridges(entries)
-    bridge_penalty = len(bridges) * 10
+    bridge_penalty = len(bridges) * 3
     details.append(f"Bridges: {len(bridges)}")
 
-    # Orphans: each one costs 15
+    # Orphans: completely disconnected entries (worse than small clusters)
+    # Already penalized by reducing coverage, but extra drag because
+    # zero connections is worse than being in a small group
     orphans = find_orphans(entries)
-    # Filter out goals from orphan penalty
     goal_ids = {e.id for e in entries if e.type == "goal"}
     real_orphans = [o for o in orphans if o not in goal_ids]
-    orphan_penalty = len(real_orphans) * 15
+    orphan_penalty = len(real_orphans) * 2
     details.append(f"Orphans: {len(real_orphans)}")
 
-    score = max(0, 100 - cluster_penalty - bridge_penalty - orphan_penalty)
+    score = max(0, base - orphan_penalty - bridge_penalty)
 
     return HealthDimension("Connectivity", score, 0.30, details)
 
