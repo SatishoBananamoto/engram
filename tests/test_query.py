@@ -8,18 +8,19 @@ Does filtering actually exclude what it should?
 import pytest
 from tools.parser import Entry
 from tools.query import (
-    by_id, by_type, by_tag, by_project, by_status,
+    by_id, by_type, by_tag, by_project, by_status, by_source,
     search, linking_to, linked_from, render_entry_list,
 )
 
 
 def make_entry(id, type="decision", tags=None, project=None,
-               status="active", links=None, title="", body=""):
+               status="active", links=None, title="", body="",
+               source="manual"):
     return Entry(
         id=id, type=type, date="2026-03-16",
         tags=tags or ["test"], status=status,
         links=links or [], project=project,
-        title=title, body=body,
+        source=source, title=title, body=body,
     )
 
 
@@ -141,6 +142,37 @@ class TestLinkQueries:
         assert linked_from(entries, "GHOST") == []
 
 
+class TestBySource:
+    def test_filters_manual(self):
+        entries = [
+            make_entry("DEC-001", source="manual"),
+            make_entry("DEC-002", source="scroll"),
+            make_entry("LRN-001", type="learning", source="manual"),
+        ]
+        results = by_source(entries, "manual")
+        assert len(results) == 2
+        assert all(e.source == "manual" for e in results)
+
+    def test_filters_scroll(self):
+        entries = [
+            make_entry("DEC-001", source="manual"),
+            make_entry("DEC-002", source="scroll"),
+            make_entry("LRN-001", type="learning", source="scroll"),
+        ]
+        results = by_source(entries, "scroll")
+        assert len(results) == 2
+        assert all(e.source == "scroll" for e in results)
+
+    def test_no_match(self):
+        entries = [make_entry("DEC-001", source="manual")]
+        assert by_source(entries, "scroll") == []
+
+    def test_default_source_is_manual(self):
+        entries = [make_entry("DEC-001")]  # no source specified
+        results = by_source(entries, "manual")
+        assert len(results) == 1
+
+
 class TestRender:
     def test_renders_entries(self, entries):
         output = render_entry_list(entries[:2])
@@ -149,3 +181,13 @@ class TestRender:
 
     def test_empty_list(self):
         assert "No entries" in render_entry_list([])
+
+    def test_shows_source_for_non_manual(self):
+        entries = [make_entry("DEC-001", title="Scroll entry", source="scroll")]
+        output = render_entry_list(entries)
+        assert "source=scroll" in output
+
+    def test_hides_source_for_manual(self):
+        entries = [make_entry("DEC-001", title="Manual entry", source="manual")]
+        output = render_entry_list(entries)
+        assert "source=" not in output

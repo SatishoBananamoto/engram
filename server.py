@@ -24,7 +24,7 @@ from tools.parser import load_knowledge_base, VALID_TYPES, VALID_STATUSES
 from tools.validator import validate, render_validation_report
 from tools.health import render_health
 from tools.query import (
-    search, by_type, by_tag, by_project, by_status,
+    search, by_type, by_tag, by_project, by_status, by_source,
     by_id, linking_to, render_entry_list,
 )
 from tools.graph import compute_stats, pagerank, shortest_path
@@ -116,7 +116,7 @@ def engram_show(entry_id: str) -> str:
 
 @mcp.tool()
 def engram_list(filter_type: str = "") -> str:
-    """List entries. Optional filter: 'decisions', 'learnings', 'mistakes', 'observations', 'goals', 'tag:X', 'project:X', 'status:X'."""
+    """List entries. Optional filter: 'decisions', 'learnings', 'mistakes', 'observations', 'goals', 'tag:X', 'project:X', 'status:X', 'source:X'."""
     entries, _ = _load()
 
     if filter_type:
@@ -136,8 +136,10 @@ def engram_list(filter_type: str = "") -> str:
             entries = by_project(entries, ft[8:])
         elif ft.startswith("status:"):
             entries = by_status(entries, ft[7:])
+        elif ft.startswith("source:"):
+            entries = by_source(entries, ft[7:])
         else:
-            return f"Unknown filter: {filter_type}. Use: decisions, learnings, mistakes, observations, goals, tag:X, project:X, status:X"
+            return f"Unknown filter: {filter_type}. Use: decisions, learnings, mistakes, observations, goals, tag:X, project:X, status:X, source:X"
 
     return render_entry_list(entries)
 
@@ -193,6 +195,7 @@ def engram_add(
     project: str = "",
     confidence: str = "",
     supersedes: str = "",
+    source: str = "manual",
 ) -> str:
     """Add a new knowledge entry.
 
@@ -205,6 +208,7 @@ def engram_add(
         project: Project name (e.g. "svx", "persona-engine", "engram")
         confidence: high, medium, or low
         supersedes: ID of entry this replaces
+        source: Where this knowledge came from — manual (default) or scroll
     """
     entry_type = entry_type.lower().strip()
     if entry_type not in VALID_TYPES:
@@ -239,6 +243,7 @@ def engram_add(
         f"date: {today}",
         f"tags: [{', '.join(tag_list)}]",
         f"status: active",
+        f"source: {source}",
     ]
     if link_list:
         fm_lines.append(f"links: [{', '.join(link_list)}]")

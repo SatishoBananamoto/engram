@@ -21,7 +21,7 @@ from .parser import load_knowledge_base
 from .validator import validate, render_validation_report
 from .health import render_health
 from .query import (
-    by_type, by_tag, by_project, by_status,
+    by_type, by_tag, by_project, by_status, by_source,
     search, by_id, linking_to, render_entry_list,
 )
 from .graph import compute_stats, pagerank, shortest_path
@@ -63,9 +63,11 @@ def cmd_list(args):
             entries = by_project(entries, filter_type[8:])
         elif filter_type.startswith("status:"):
             entries = by_status(entries, filter_type[7:])
+        elif filter_type.startswith("source:"):
+            entries = by_source(entries, filter_type[7:])
         else:
             print(f"Unknown filter: {filter_type}")
-            print("Usage: list [decisions|learnings|mistakes|observations|goals|tag:X|project:X|status:X]")
+            print("Usage: list [decisions|learnings|mistakes|observations|goals|tag:X|project:X|status:X|source:X]")
             return
 
     print(render_entry_list(entries))

@@ -24,6 +24,7 @@ VALID_TYPES = {
 
 VALID_STATUSES = {"active", "superseded", "archived", "stale"}
 VALID_CONFIDENCE = {"high", "medium", "low"}
+VALID_SOURCES = {"manual", "scroll"}
 
 # Frontmatter parsing patterns
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.+?)\n---\s*\n", re.DOTALL)
@@ -43,6 +44,7 @@ class Entry:
     supersedes: Optional[str] = None
     project: Optional[str] = None
     confidence: Optional[str] = None
+    source: str = "manual"
     title: str = ""
     body: str = ""
     file_path: Optional[str] = None
@@ -175,9 +177,13 @@ def parse_entry(file_path: Path) -> tuple[Optional[Entry], list[ParseError]]:
     supersedes = metadata.get("supersedes")
     project = metadata.get("project")
     confidence = metadata.get("confidence")
+    source = metadata.get("source", "manual")
 
     if confidence and confidence not in VALID_CONFIDENCE:
         errors.append(ParseError(path_str, f"Invalid confidence '{confidence}'. Valid: {VALID_CONFIDENCE}"))
+
+    if source not in VALID_SOURCES:
+        errors.append(ParseError(path_str, f"Unknown source '{source}'. Known: {VALID_SOURCES}"))
 
     title = extract_title(body)
 
@@ -191,6 +197,7 @@ def parse_entry(file_path: Path) -> tuple[Optional[Entry], list[ParseError]]:
         supersedes=supersedes,
         project=project,
         confidence=confidence,
+        source=source,
         title=title,
         body=body,
         file_path=path_str,

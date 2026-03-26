@@ -22,6 +22,7 @@ from tools.parser import (
     ParseError,
     VALID_TYPES,
     VALID_STATUSES,
+    VALID_SOURCES,
 )
 
 
@@ -366,3 +367,80 @@ tags: [test]
         entries, errors = load_entries(tmp_entries)
         assert len(entries) == 0
         assert len(errors) == 0
+
+
+# --- source field ---
+
+class TestSourceField:
+    def test_source_parsed(self, tmp_entries):
+        content = """---
+id: DEC-001
+type: decision
+date: 2026-03-16
+tags: [test]
+source: scroll
+---
+
+# Scroll-extracted decision
+"""
+        path = write_entry(tmp_entries, "DEC-001.md", content)
+        entry, errors = parse_entry(path)
+        assert entry is not None
+        assert entry.source == "scroll"
+
+    def test_source_defaults_to_manual(self, tmp_entries):
+        content = """---
+id: DEC-001
+type: decision
+date: 2026-03-16
+tags: [test]
+---
+
+# No source field
+"""
+        path = write_entry(tmp_entries, "DEC-001.md", content)
+        entry, errors = parse_entry(path)
+        assert entry is not None
+        assert entry.source == "manual"
+
+    def test_source_manual_explicit(self, tmp_entries):
+        content = """---
+id: DEC-001
+type: decision
+date: 2026-03-16
+tags: [test]
+source: manual
+---
+
+# Explicit manual source
+"""
+        path = write_entry(tmp_entries, "DEC-001.md", content)
+        entry, errors = parse_entry(path)
+        assert entry is not None
+        assert entry.source == "manual"
+        assert len(errors) == 0
+
+    def test_unknown_source_warns(self, tmp_entries):
+        content = """---
+id: DEC-001
+type: decision
+date: 2026-03-16
+tags: [test]
+source: alien
+---
+
+# Unknown source
+"""
+        path = write_entry(tmp_entries, "DEC-001.md", content)
+        entry, errors = parse_entry(path)
+        assert entry is not None  # still parses — forward compatible
+        assert entry.source == "alien"
+        assert any("Unknown source" in e.message for e in errors)
+
+    def test_entry_dataclass_default(self):
+        entry = Entry(id="DEC-001", type="decision", date="2026-03-16")
+        assert entry.source == "manual"
+
+    def test_valid_sources_constant(self):
+        assert "manual" in VALID_SOURCES
+        assert "scroll" in VALID_SOURCES

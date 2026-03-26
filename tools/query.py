@@ -39,6 +39,11 @@ def by_status(entries: list[Entry], status: str) -> list[Entry]:
     return [e for e in entries if e.status == status]
 
 
+def by_source(entries: list[Entry], source: str) -> list[Entry]:
+    """Filter entries by source."""
+    return [e for e in entries if e.source == source]
+
+
 def search(entries: list[Entry], query: str) -> list[Entry]:
     """Full-text search across titles and bodies (case-insensitive)."""
     q = query.lower()
@@ -71,8 +76,9 @@ def render_entry_list(entries: list[Entry], show_body: bool = False) -> str:
     for e in entries:
         status_icon = {"active": "+", "superseded": "~", "archived": "-", "stale": "?"}.get(e.status, " ")
         tags_str = ", ".join(e.tags)
+        source_str = f"  source={e.source}" if e.source != "manual" else ""
         lines.append(f"  [{status_icon}] {e.id}: {e.title}")
-        lines.append(f"      type={e.type}  date={e.date}  tags=[{tags_str}]")
+        lines.append(f"      type={e.type}  date={e.date}  tags=[{tags_str}]{source_str}")
         if e.links:
             lines.append(f"      links: {', '.join(e.links)}")
         if show_body and e.body:
